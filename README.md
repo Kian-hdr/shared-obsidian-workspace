@@ -16,7 +16,10 @@ offline edits on different computers.
 **[Copy the setup prompt into your own chat](SETUP-PROMPT.md).** No placeholders
 need editing. The prompt guides a local agent through finding your vault, installing
 the toolkit, preserving existing instructions, setting up or joining the correct
-project, and checking the result. It asks for your project location only when needed.
+project, and checking the result. It installs and configures missing Obsidian, Python,
+and the existing sharing client's dependencies. If you choose Homebrew, it installs
+and configures Homebrew too. It continues under your setup authorization, respecting
+your agent's approval settings and any required authentication or OS interaction.
 
 ## Get it
 
@@ -67,8 +70,13 @@ agents can read its `SKILL.md` directly and use the scripts without automatic di
 Give your local agent this prompt, replacing the project path:
 
 ```text
-Use the setup-shared-project-workspace skill to configure the existing project at
-<absolute project path> for collaboration by multiple people and AI agents.
+Use the setup-shared-project-workspace skill to configure my computer and the existing
+project at <absolute project path> for collaboration by multiple people and AI agents.
+I authorize required local installs and configuration, including missing Obsidian,
+Python, the existing sharing client, prerequisites, and minimal PATH changes. If I
+choose Homebrew, install and configure it when missing. Follow references/local-setup.md.
+Continue without repeated permission requests for authorized steps; honor my actual
+approval settings and hand off only required authentication or OS interactions.
 Read its governing instructions and current coordination state first. Audit it,
 preview the retrofit, preserve existing files and rules, and apply compatible local
 setup changes. Reuse the existing sharing provider. Ask for identity information
@@ -84,7 +92,8 @@ See [the setup guide](docs/SETUP.md) for copyable terminal commands, Windows gui
 existing-vault preservation, generated files, and validation.
 
 Setup and the tracker require **Python 3.9+** and only its standard library.
-Obsidian is optional; the notes are ordinary Markdown. Viewing `Workspace.base`
+Obsidian is installed by the full setup prompt for Obsidian workflows; an explicitly
+Markdown-only workflow can omit it. The notes are ordinary Markdown. Viewing `Workspace.base`
 requires an Obsidian installation that supports Bases. Python tests additionally
 require PyYAML, which is a development dependency only.
 

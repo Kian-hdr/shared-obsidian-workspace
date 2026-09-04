@@ -7,6 +7,9 @@ on your computer; a browser-only chat may need to hand off the local steps.
 
 This prompt supports setting up your own workspace and joining an existing one.
 It does not contain a private vault invitation or grant access to someone else's files.
+It authorizes required local installs and configuration. If you choose Homebrew,
+the agent will install and configure it when missing. Your agent's approval settings
+and operating system controls still apply.
 
 ```text
 Set up my computer and the correct Obsidian or Markdown project so I can work with
@@ -14,11 +17,18 @@ my AI agent and collaborate with other people using this toolkit:
 https://github.com/Kian-hdr/shared-obsidian-workspace
 
 Carry out the setup with the tools you have. Reuse working components and continue
-through reversible, in-scope steps without repeatedly asking for permission. I
-authorize necessary local setup, including installing a compatible Python runtime,
-this skill, and Obsidian if needed for the vault I choose. Preserve my existing
-files, accounts, agent settings, and sharing provider. Do not claim you configured
-my computer if you can only operate in a remote container or browser-only chat.
+through in-scope steps without repeatedly asking for permission. I authorize the
+necessary local installations and configuration: Obsidian for an Obsidian workspace,
+a compatible maintained Python, this skill, the existing sharing provider's desktop
+client, their required prerequisites, and minimal shell/PATH setup. If I choose
+Homebrew, install and configure it too when missing. Reuse my preferred installation
+route; otherwise use an existing suitable package manager or an official installer.
+Do not ask me to approve each already-authorized package or routine setup step.
+Honor my actual approval settings and enforced tool, OS, and administrator policies.
+Pause only for missing required information, a real enforced gate, an action outside
+scope, or an interaction only I can perform. Resume automatically afterward. Preserve
+existing files, accounts, agent settings, and the sharing provider. Do not claim you
+configured my computer from a remote container or browser-only chat.
 
 1. Identify the target and my role.
 Inspect the current workspace and available local tools, without scanning unrelated
@@ -33,14 +43,24 @@ Reuse a clean existing checkout or download this exact public repository to a
 local tools directory outside my synchronized vault. Do not reset a modified copy.
 Record the commit or source version you use. Read README.md, AGENTS.md, docs/SETUP.md,
 docs/COLLABORATION.md, and skills/setup-shared-project-workspace/SKILL.md. Also read
-that skill's references/retrofit-policy.md and references/teammate-onboarding.md.
+that skill's references/retrofit-policy.md, references/local-setup.md, and
+references/teammate-onboarding.md.
 Inspect scripts before execution. Follow their actual help and use correctly
 quoted paths and the appropriate interpreter for my OS. Never execute placeholders.
 
 3. Prepare this computer.
-Reuse existing Python and Obsidian. The setup and tracker require Python 3.9+
-and no third-party Python packages; test dependencies are not needed for normal use.
-Verify current compatibility and use official sources for any necessary installs.
+Follow references/local-setup.md to install missing dependencies and finish their
+configuration. Reuse existing Python and Obsidian. Python 3.9+ is the compatibility
+floor; choose a maintained stable release for a new install. Normal setup needs no
+third-party Python packages. If I chose Homebrew and it is missing, install it from
+its official source, handle required prerequisites, apply its shellenv instructions
+to the correct shell without duplicating entries, and verify brew in a fresh shell.
+Unless I requested Markdown-only work or declined Obsidian, install missing Obsidian
+through the chosen supported route. Verify current package
+and OS compatibility instead of assuming every Homebrew package runs on every OS.
+Use documented unattended options when appropriate and permitted. Hand off required
+password, administrator, MFA, and consent interactions through their normal UI,
+then resume. Do not weaken security or approval settings to suppress those gates.
 If my agent supports skills, install the complete skill folder, including assets,
 scripts, references, metadata, and license, in its supported local skill location.
 Back up and compare an existing installation rather than blindly replacing it.
@@ -52,8 +72,8 @@ Read the governing vault and project instructions, existing home note, and curre
 coordination state. For a shared project, resolve the actual locally synchronized
 folder and confirm its required files are readable and I have the necessary access.
 Use the onboarding reference for the existing sharing provider. If its desktop
-client is missing, explain the required installation and obtain my approval before
-installing it. Do not introduce a new sharing service or duplicate the shared vault.
+client is missing, install and configure it under the authorization above, without
+another permission question. Do not introduce a new sharing service or duplicate the shared vault.
 Hand password, passkey, MFA, consent, and administrator prompts to me through their
 normal interfaces. If access is denied, prepare the exact next step; ask before
 sending an access request or changing permissions, then resume after access is granted.
@@ -82,7 +102,9 @@ before running it. Missing project files are a blocker, not permission to recrea
 Open the real project in my agent and explicitly load its governing AGENTS.md.
 Verify that the agent understands target ownership, checkpoints, evidence, and
 handoffs. Do not assume automatic instruction discovery or weaken global permissions.
-Open the existing vault in Obsidian if available; do not create a nested duplicate,
+Unless I requested Markdown-only setup, finish installing and launching Obsidian,
+then open the correct existing vault or my chosen new vault. Verify the app launch
+and vault opening when UI tools are available. Do not create a nested duplicate,
 overwrite .obsidian settings, install community plugins, or add a second sync service.
 Inspect Coordination/Workspace.base visually when UI tools are available; otherwise
 label the visual check unverified. If a new agent session is necessary, give me the
@@ -100,12 +122,17 @@ files or provide distributed locking. Another computer's receipt is a separate c
 
 8. Report and hand off.
 Give me the exact project and vault paths, toolkit version, skill location or direct
-script fallback, actor ID, what was reused or changed, validation results, and next
+script fallback, actor ID, installed dependencies, PATH changes, Obsidian launch and
+vault-opening results, what was reused or changed, validation results, and next
 action. Distinguish locally configured, shared collaboration ready, partially
-configured, and blocked. Call shared collaboration ready only when the agent has
-loaded the rules, validation passes, shared editing access works, and my actor
-record's upload is verified. Do not imply a local-only project is already shared.
+configured, and blocked. Call shared collaboration ready only when required local
+installs/configuration are complete, the Obsidian app and correct vault opened (or
+I explicitly omitted Obsidian), the agent has loaded the rules, validation passes,
+shared editing access works, and my actor record's upload is verified. Do not imply
+a local-only project is already shared.
 List any unverified UI or other-device checks and the smallest step needed to finish.
+Do not call the requested setup complete while a required installation, configuration,
+app launch, or validation step remains unfinished.
 
 If you bootstrapped or retrofitted my project, also give me the skill's teammate
 onboarding prompt in chat using verified project details. Ask for an approved

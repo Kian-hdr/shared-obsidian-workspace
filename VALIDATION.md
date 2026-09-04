@@ -31,3 +31,17 @@ PowerShell instructions were not manually exercised during this publication pass
 The GitHub Actions workflow runs the bundled Python tests on Linux, macOS, and Windows
 with Python 3.9 and 3.13. Consult the actual workflow run for its current result;
 the existence of the workflow file is not evidence that those jobs passed.
+
+## Local setup instruction update, 2026-09-04
+
+The setup prompt, teammate prompt, skill entrypoint, and supporting documentation
+now authorize required local dependencies and configuration, including missing
+Homebrew when chosen, Obsidian installation/launch, and opening the correct vault.
+An independent scenario review covered a fresh machine, installation preferences,
+missing PATH entries, Markdown-only use, unsupported platforms, and enforced
+approval/authentication gates. The skill validator and documentation link/format
+checks passed. Runtime scripts and dashboard assets were unchanged.
+
+The revised skill guidance was also synchronized to the maintainer's installed
+skill after preserving its previous instruction files. No fresh-machine installer,
+administrator/authentication flow, or recipient app launch was executed for this update.

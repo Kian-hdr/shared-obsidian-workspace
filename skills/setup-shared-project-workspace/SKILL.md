@@ -11,6 +11,11 @@ Create a lean, self-contained collaboration layer. Keep substantive instructions
 The setup and tracker require Python 3.9 or newer and use only its standard library.
 Resolve `scripts/` paths relative to this skill directory, not the target project.
 Run `--help` for the setup or tracker command when its required inputs are unclear.
+For requested computer readiness or full setup, read
+[references/local-setup.md](references/local-setup.md). Complete missing dependencies,
+Obsidian launch/vault setup, and Homebrew installation/configuration when chosen.
+Existing authorization covers necessary local steps; do not ask again per package.
+Honor the recipient's enforced approval policies and required human interactions.
 
 ## Choose the mode
 
@@ -92,8 +97,10 @@ the missing link. Do not invent a URL or present an incomplete prompt as ready t
 
 ## Boundaries
 
-This skill creates local project files and a chat onboarding prompt only. Generating
-the prompt does not install apps, log in, or request access on anyone else's behalf.
+Ordinary project setup creates local project files and a chat onboarding prompt.
+When full local setup is requested, also install and configure required dependencies
+under the recipient's authorization, following `references/local-setup.md`.
+Generating a prompt alone does not install apps, log in, or request access on anyone else's behalf.
 The recipient's agent must act under that recipient's permissions and tools, using
 the authentication, access-request, and readiness boundaries in the template.
 Workspace setup does not authorize invitations,

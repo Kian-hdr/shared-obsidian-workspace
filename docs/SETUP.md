@@ -3,6 +3,20 @@
 Prefer agent-guided setup? [Copy this prompt into your own chat](../SETUP-PROMPT.md).
 It discovers your target and handles either owner setup or joining an existing project.
 
+## Dependencies and automatic local setup
+
+The full setup prompt authorizes the needed local installations and configuration.
+Its agent installs missing Obsidian, a compatible Python, the existing sharing client,
+and required prerequisites, then launches Obsidian and opens the correct vault.
+If you choose Homebrew and it is missing, the agent installs it, completes shell/PATH
+configuration, and checks that it works. Routine authorized steps do not need another
+permission question. Your actual approval policy and required authentication or
+protected OS interaction still apply, and the agent resumes after those handoffs.
+
+See the skill's [local setup guide](../skills/setup-shared-project-workspace/references/local-setup.md)
+for supported installation routes and completion checks. The terminal commands below
+configure project files; they do not themselves install desktop apps or Homebrew.
+
 ## Before setup
 
 Use the real locally available project directory, not a downloaded duplicate of

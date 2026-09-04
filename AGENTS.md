@@ -110,7 +110,12 @@ Keep credentials, tokens, cookies, private keys, payment data, and sensitive liv
 endpoints out of the vault. Respect disclosure restrictions in notes and projects.
 Do not include confidential content in external drafts without authorization.
 
-Reading and reversible in-scope edits do not require repeated approval. Obtain
+Reading, reversible in-scope edits, and already-authorized local installations and
+configuration do not require repeated approval. A full setup request covers its
+necessary prerequisites, app launch, vault opening, and minimal PATH configuration;
+choosing Homebrew includes installing it when missing. Respect the recipient's
+actual tool/OS/admin approval rules and required human interactions. Do not weaken
+those rules or add a new permission question for each authorized step. Obtain
 explicit authorization before external messages, publication, permission changes,
 purchases, deployment, or destructive actions. Existing authorization remains valid
 within its stated scope. Sharing a vault grants no authority to act for another person.
