@@ -11,6 +11,13 @@ tracking, and an Obsidian Bases dashboard.
 existing sharing provider. File claims are advisory; they cannot prevent simultaneous
 offline edits on different computers.
 
+## Let your agent set it up
+
+**[Copy the setup prompt into your own chat](SETUP-PROMPT.md).** No placeholders
+need editing. The prompt guides a local agent through finding your vault, installing
+the toolkit, preserving existing instructions, setting up or joining the correct
+project, and checking the result. It asks for your project location only when needed.
+
 ## Get it
 
 - [Download the repository ZIP](https://github.com/Kian-hdr/shared-obsidian-workspace/archive/refs/heads/main.zip).
@@ -101,6 +108,7 @@ See [the collaboration guide](docs/COLLABORATION.md) for everyday use and confli
 
 ```text
 AGENTS.md                         Copyable vault instructions
+SETUP-PROMPT.md                   Paste into your own agent's chat to get started
 docs/SETUP.md                     Owner setup and validation
 docs/COLLABORATION.md             Teammate workflow and boundaries
 skills/setup-shared-project-workspace/

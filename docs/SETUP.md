@@ -1,5 +1,8 @@
 # Setup guide
 
+Prefer agent-guided setup? [Copy this prompt into your own chat](../SETUP-PROMPT.md).
+It discovers your target and handles either owner setup or joining an existing project.
+
 ## Before setup
 
 Use the real locally available project directory, not a downloaded duplicate of
