@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shared Project Workspace"
+  short_description: "Set up multi-user agent project tracking"
+  default_prompt: "Use $setup-shared-project-workspace to make this project safely usable by multiple people and AI agents."

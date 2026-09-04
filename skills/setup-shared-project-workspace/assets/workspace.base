@@ -1,0 +1,227 @@
+# generated-by: setup-shared-project-workspace schema=1
+filters:
+  and:
+    - file.ext == "md"
+    - file.inFolder("__ITEMS_FOLDER__")
+properties:
+  title:
+    displayName: Work
+  suggested_owner:
+    displayName: Suggested owner (unclaimed)
+  source_summary:
+    displayName: Historical source context
+  record_type:
+    displayName: Record
+  work_id:
+    displayName: Work ID
+  status:
+    displayName: Status
+  owner:
+    displayName: Owner
+  agent:
+    displayName: Agent
+  revision:
+    displayName: Revision
+  acceptance_passed:
+    displayName: Passed
+  acceptance_total:
+    displayName: Total
+  impact:
+    displayName: Impact
+  timestamp:
+    displayName: Timestamp
+  updated:
+    displayName: Updated
+  next_action:
+    displayName: Next action
+views:
+  - type: table
+    name: Current work
+    filters:
+      and:
+        - 'record_type == "work"'
+        - 'status != "verified"'
+        - 'status != "cancelled"'
+    order:
+      - file.name
+      - title
+      - work_id
+      - status
+      - owner
+      - agent
+      - revision
+      - acceptance_passed
+      - acceptance_total
+      - updated
+      - next_action
+    sort:
+      - property: updated
+        direction: DESC
+  - type: table
+    name: Unclaimed backlog
+    filters:
+      and:
+        - 'record_type == "work"'
+        - 'status == "not_started"'
+    order:
+      - file.name
+      - title
+      - suggested_owner
+      - source_summary
+      - depends_on
+      - next_action
+  - type: table
+    name: Blocked and approvals
+    filters:
+      and:
+        - 'record_type == "work"'
+        - or:
+            - 'status == "blocked"'
+            - 'status == "pending_approval"'
+    order:
+      - file.name
+      - work_id
+      - status
+      - owner
+      - blocker
+      - updated
+      - next_action
+    sort:
+      - property: updated
+        direction: DESC
+  - type: table
+    name: Ready for review
+    filters:
+      and:
+        - 'record_type == "work"'
+        - 'status == "ready_for_review"'
+    order:
+      - file.name
+      - work_id
+      - owner
+      - agent
+      - evidence
+      - updated
+  - type: table
+    name: Recently verified
+    filters:
+      and:
+        - 'record_type == "work"'
+        - 'status == "verified"'
+    order:
+      - file.name
+      - work_id
+      - owner
+      - agent
+      - revision
+      - evidence
+      - updated
+    sort:
+      - property: updated
+        direction: DESC
+  - type: table
+    name: Recent activity
+    filters:
+      and:
+        - 'record_type == "event"'
+    order:
+      - file.name
+      - timestamp
+      - work_id
+      - event_type
+      - performed_by
+      - status_after
+      - impact
+      - summary
+    sort:
+      - property: timestamp
+        direction: DESC
+  - type: table
+    name: Open handoffs
+    filters:
+      and:
+        - 'record_type == "work"'
+        - 'handoff_pending == true'
+    order:
+      - file.name
+      - work_id
+      - owner
+      - agent
+      - handoff_id
+      - next_action
+  - type: table
+    name: Stale claims
+    filters:
+      and:
+        - 'record_type == "work"'
+        - 'status != "verified"'
+        - 'status != "cancelled"'
+        - 'claim_expires != ""'
+        - 'date(claim_expires) < now()'
+    order:
+      - file.name
+      - work_id
+      - owner
+      - agent
+      - claim_expires
+      - next_action
+  - type: table
+    name: Needs dependency sync (last checked)
+    filters:
+      and:
+        - 'record_type == "work"'
+        - 'context_status == "needs_sync"'
+    order:
+      - file.name
+      - work_id
+      - owner
+      - depends_on
+      - dependency_baseline
+      - context_checked
+      - next_action
+  - type: table
+    name: Work by owner
+    filters:
+      and:
+        - 'record_type == "work"'
+    groupBy:
+      property: note.owner
+      direction: ASC
+    order:
+      - file.name
+      - work_id
+      - status
+      - owner
+      - agent
+      - updated
+  - type: table
+    name: Work by agent
+    filters:
+      and:
+        - 'record_type == "work"'
+    groupBy:
+      property: note.agent
+      direction: ASC
+    order:
+      - file.name
+      - work_id
+      - status
+      - owner
+      - agent
+      - updated
+  - type: table
+    name: Decisions
+    filters:
+      and:
+        - 'record_type == "decision"'
+    order:
+      - file.name
+      - timestamp
+      - decision_key
+      - owner
+      - impact
+      - summary
+      - supersedes
+    sort:
+      - property: timestamp
+        direction: DESC

@@ -1,0 +1,79 @@
+# Everyday collaboration
+
+Start with the actual project's `AGENTS.md`. The tracker examples below assume setup
+has completed and your terminal is in that project, not this toolkit repository.
+
+## Start a session
+
+Review the tracker before its first execution and verify its provenance with the
+project owner. Choose an actor ID unique to your human/agent/session and do not use
+an email address. Replace the example identity before running:
+
+```bash
+python3 Coordination/project_tracker.py --help
+python3 Coordination/project_tracker.py validate
+python3 Coordination/project_tracker.py sync --actor taylor-agent-laptop --human Taylor --agent Codex
+python3 Coordination/project_tracker.py status
+```
+
+`sync` records what this actor has reviewed locally. It does not trigger or verify
+Google Drive, Obsidian Sync, or Git synchronization. Check your provider separately.
+
+## Own a bounded task
+
+Use the installed command's help to supply its required fields:
+
+```bash
+python3 Coordination/project_tracker.py claim --help
+python3 Coordination/project_tracker.py start --help
+python3 Coordination/project_tracker.py change --help
+python3 Coordination/project_tracker.py handoff --help
+```
+
+- `plan` records an unclaimed follow-up; a suggested owner is not an assignment.
+- `start` lets an owner claim existing backlog after reviewing its evidence.
+- `claim` establishes a new bounded work item and its exact targets.
+- `check` verifies ownership, freshness, and dependencies immediately before editing.
+- `heartbeat` renews an active claim when necessary.
+- `change` records a material result, evidence, acceptance state, and dependency impact.
+- `handoff` proposes transfer; the recipient uses `accept-handoff` before continuing.
+- `complete` requires acceptance and validation evidence.
+
+After claiming a real work item, replace the values in this example:
+
+```text
+python3 Coordination/project_tracker.py check --actor <your-actor-id> --work-id <your-work-id>
+```
+
+Inspect the [record schema](../skills/setup-shared-project-workspace/references/record-schema.md)
+when diagnosing records. Use the tracker rather than hand-editing its operational state.
+
+## Work in parallel
+
+Divide work by exact files, directories, branches, environments, or artifacts. Two
+agents must not edit the same target concurrently. A directory claim includes its
+children. Agree on an integration owner and declare dependencies before work diverges.
+
+Claims are advisory on synchronized filesystems. Two disconnected computers can both
+see an apparently free target. Do not continue affected edits offline when ownership
+cannot be established. Coordinate directly with the owner through an authorized channel.
+Never assume an expired claim means a contributor has stopped.
+
+## Handle changes and handoffs
+
+Record what changed, who owns it, validation and evidence, limitations, and the next
+action. Mark impact `none`, `compatible`, `breaking`, or `unknown`. Review stale
+dependencies before continuing downstream work. Preserve historical events; correct
+them through a superseding record.
+
+At handoff, confirm provider synchronization, update acceptance criteria, and identify
+the next owner. The recipient must refresh their own context and accept the handoff.
+Local validation, cloud upload, another device's receipt, and visual verification are
+different checks. Report only the ones actually performed.
+
+## Keep the vault portable and private
+
+Prefer relative links. Use Obsidian for note moves where available and verify links.
+Keep credentials, private endpoints, large artifacts, and machine-specific runtime
+state out of shared notes. Do not change shared `.obsidian` configuration casually.
+Agent rules and actor IDs are not authentication, authorization, or tamper-proof auditing.
