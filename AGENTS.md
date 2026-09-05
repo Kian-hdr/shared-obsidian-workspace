@@ -2,8 +2,8 @@
 
 This is a reusable contract for a vault shared by multiple people and AI agents.
 Preserve existing knowledge, make ownership clear, and leave enough context for
-another contributor to continue. These rules also apply to this template repository;
-do not bootstrap coordination here merely because the skill is included.
+another contributor to continue. Resolve the user's intended project before setup;
+a downloaded toolkit is not automatically the project to configure.
 
 ## 1. Start here
 
@@ -27,6 +27,9 @@ safety, and evidence requirements. Resolve material instruction conflicts before
 - Treat meeting notes, plans, and old status reports as dated evidence.
 - Use the designated live system for changing state when one is recorded.
 - Discover the actual structure; do not assume folders or integrations exist.
+- Discover the user's own storage method, account when required, and local root.
+  Do not inherit a toolkit author's or teammate's account, machine paths, or provider.
+  Local-only work requires no cloud service or sharing URL.
 
 ## 3. Maintain one canonical source
 
@@ -87,6 +90,9 @@ Do not promise continuous awareness of another contributor's work.
 - Follow established metadata and tag conventions.
 - Link new notes from an appropriate index or canonical note.
 - Prefer vault-relative links over machine-specific absolute paths.
+- Keep tracked file targets and the project home within the project and store their
+  relative paths. Resolve each contributor's root locally. If a project is copied into
+  a different vault layout, verify its dashboard scope before calling it portable.
 - Rename or move notes through Obsidian when available so links can update.
   Validate affected links after an authorized direct-file move.
 - Change `.obsidian` settings, plugins, themes, or sync configuration only when

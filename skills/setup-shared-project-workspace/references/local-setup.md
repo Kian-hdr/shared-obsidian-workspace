@@ -8,8 +8,10 @@ Apply the recipient's existing authorization to the necessary local steps below.
 
 The full setup prompt authorizes required local installs, their prerequisites,
 minimal PATH configuration, app launch, and opening the chosen vault. Install missing
-Obsidian for an Obsidian workflow, a compatible Python, and the existing sharing
-provider's desktop client. If the recipient chooses Homebrew, that choice includes
+Obsidian for an Obsidian workflow, a compatible Python, and only the components needed
+by the actual access method in [storage-access.md](storage-access.md). Local-only
+work needs no cloud account/client; Git and some sharing methods use different tools.
+If the recipient chooses Homebrew, that choice includes
 installing and configuring Homebrew when missing. Do not ask for the same permission
 again at each package, installer, or configuration step.
 
@@ -62,11 +64,10 @@ Check current package metadata and platform support before installation:
 | --- | --- |
 | Obsidian | `brew install --cask obsidian` |
 | Python | Install the current suitable Python formula; verify its interpreter path |
-| Google Drive desktop | `brew install --cask google-drive` |
 
-The [Obsidian cask](https://formulae.brew.sh/cask/obsidian) and
-[Google Drive cask](https://formulae.brew.sh/cask/google-drive) publish their current
-platform requirements. Package-manager support does not imply every app supports
+The [Obsidian cask](https://formulae.brew.sh/cask/obsidian) publishes its current
+platform requirements. Check a selected storage client's metadata separately.
+Package-manager support does not imply every app supports
 the same OS. Do not force incompatible casks or upgrade unrelated packages.
 
 ## Python and other required dependencies
@@ -105,13 +106,15 @@ or enable another sync service as an implicit dependency. If shared configuratio
 requires owner approval, report that specific gate. Never report UI verification
 when no UI inspection was possible.
 
-## Existing sharing provider
+## Only the selected access method
 
-Install and launch its required desktop client under the setup authorization.
+Identify the method before installing anything for storage. Follow
+[storage-access.md](storage-access.md); no provider is the default. If the method
+requires a desktop client, install and launch that client under setup authorization.
 Reuse existing accounts and sync configuration, then open the official sign-in flow
-if needed. Have the recipient complete authentication and consent, and resume.
-For Drive, follow the current [installation and sign-in guide](https://support.google.com/drive/answer/10838124)
-and [OS requirements](https://support.google.com/drive/answer/2375082).
+only if that method needs it. Have the recipient complete authentication and consent,
+then resume. Local-only work needs neither sign-in nor upload; a Git checkout uses
+its own remote/access workflow, not a cloud desktop sync client.
 
 If the official client cannot run on this platform or organization policy blocks it,
 report the exact blocker and available supported path. Do not install an unofficial
@@ -123,7 +126,8 @@ authorization and the recipient's policy; this local setup alone does not grant 
 
 Report installations and versions, any required prerequisites, shell/PATH changes,
 app launch, correct vault opening, tracker validation, actor record, and provider
-upload separately. Recheck validation after actor creation. An unavailable UI or
+propagation where applicable separately. Recheck validation after actor creation.
+Report local-only readiness without inventing a remote dependency. An unavailable UI or
 authentication step means that part is unfinished; complete independent work and
 provide the precise continuation step. Do not declare the requested setup complete
 while a required installation, configuration, launch, or validation step remains.

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -21,32 +22,39 @@ class SetupError(RuntimeError):
 
 
 def infer_project_home(target: Path, explicit: str | None) -> tuple[Path, bool]:
+    def checked_home(candidate: Path) -> Path:
+        resolved = candidate.resolve()
+        if not resolved.is_relative_to(target):
+            raise SetupError("Project home must be inside the project root so it can be shared. Use a project-relative Markdown file.")
+        if not resolved.is_file():
+            raise SetupError(f"Project home is not a file: {candidate}")
+        return resolved
+
     if explicit:
-        candidate = Path(explicit)
+        candidate = Path(explicit.replace("\\", "/"))
         candidate = candidate if candidate.is_absolute() else target / candidate
-        if not candidate.exists():
-            raise SetupError(f"Explicit project home does not exist: {candidate}")
-        return candidate, False
+        return checked_home(candidate), False
     readme = target / "README.md"
-    if readme.exists():
-        return readme, False
+    for candidate in (target / "Home.md", readme):
+        if candidate.exists():
+            return checked_home(candidate), False
     named = target / f"{target.name}.md"
     if named.exists():
-        return named, False
+        return checked_home(named), False
     excluded = {"AGENTS.md", "CLAUDE.md"}
     for candidate in sorted(target.glob("*.md")):
         if candidate.name in excluded:
             continue
         text = candidate.read_text(encoding="utf-8", errors="replace")[:4096]
         if "type: project" in text:
-            return candidate, False
+            return checked_home(candidate), False
     return readme, True
 
 
 def collaboration_mode(target: Path, requested: str) -> str:
     if requested != "auto":
         return requested
-    return "git" if (target / ".git").exists() else "shared-folder"
+    return "git" if any((root / ".git").exists() for root in (target, *target.parents)) else "shared-folder"
 
 
 def detected_mode(target: Path, requested: str) -> str:
@@ -63,6 +71,15 @@ def find_vault_root(target: Path) -> Path | None:
     return None
 
 
+def dashboard_content(items_folder: str) -> str:
+    expression = f"file.inFolder({json.dumps(items_folder, ensure_ascii=False)})"
+    # JSON strings are YAML double-quoted scalars. Quote the whole expression as
+    # well as its argument so colons, apostrophes and quotes in paths stay text.
+    return (ASSETS / "workspace.base").read_text(encoding="utf-8").replace(
+        'file.inFolder("__ITEMS_FOLDER__")', json.dumps(expression, ensure_ascii=False)
+    )
+
+
 def managed_section(project_name: str, project_home: str, mode: str) -> str:
     return f"""{MANAGED_START}
 ## Shared project coordination
@@ -76,7 +93,7 @@ Project home: `{project_home}`
 Collaboration mode: `{mode}`  
 Coordination schema: `1`
 Workspace skill: `setup-shared-project-workspace`
-Workspace skill version: `1.1.0`
+Workspace skill version: `1.2.0`
 
 ### Canonical state
 
@@ -100,6 +117,12 @@ Before mutation, claim a bounded work ID and every exact file, directory, branch
 environment, or artifact target. One active owner may mutate a target at a time. A
 directory claim conflicts with descendants. Synchronize again immediately before
 integration or when the target changed since the claim.
+
+Store file targets and the project-home pointer relative to the project root, using
+forward slashes. Absolute local file inputs inside the project are converted to this
+form. Home shortcuts, paths outside the project, and parent traversal are rejected.
+Use agreed portable labels for non-file resources; these labels are advisory and are
+not live branch, environment, or artifact checks.
 
 Use `plan` for unclaimed backlog; its actor/owner identify the recorder, while
 `--suggested-owner` is not an assignment. Preserve historical context with
@@ -251,13 +274,13 @@ def main() -> int:
         if home_would_create and not args.purpose:
             raise SetupError("Creating a new project home requires --purpose.")
 
-        home_label = str(project_home.relative_to(target)) if project_home.is_relative_to(target) else str(project_home)
+        home_label = project_home.relative_to(target).as_posix()
         coordination = target / "Coordination"
         items = coordination / "Items"
         vault_root = find_vault_root(target)
-        items_folder = str(items.relative_to(vault_root)).replace("\\", "/") if vault_root else "Coordination/Items"
+        items_folder = items.relative_to(vault_root).as_posix() if vault_root else "Coordination/Items"
         planned = {
-            "Coordination/Workspace.base": (ASSETS / "workspace.base").read_text(encoding="utf-8").replace("__ITEMS_FOLDER__", items_folder),
+            "Coordination/Workspace.base": dashboard_content(items_folder),
             "Coordination/project_tracker.py": (ASSETS / "project_tracker.py").read_text(encoding="utf-8"),
         }
 

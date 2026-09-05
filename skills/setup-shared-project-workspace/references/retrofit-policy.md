@@ -6,8 +6,10 @@ Retrofitting must preserve the target project's existing authority and history.
 
 Read the target's governing instructions and inventory root-level Markdown, existing
 status or work logs, coordination folders, `.obsidian`, `.git`, and linked external
-systems. Select one existing project home in this order: an explicit path, `README.md`,
-a root note matching the directory name, then a root note with `type: project`.
+systems. Select one existing project home in this order: an explicit path, `Home.md`,
+`README.md`, a root note matching the directory name, then a root note with
+`type: project`. The resolved home must be a file inside the project root; its shared
+pointer is stored relative to that root using forward slashes.
 
 ## Managed sections
 
@@ -49,6 +51,23 @@ must distinguish a valid installed workspace from a partially configured one.
 - `git`: store branch and commit evidence; Git controls exact diffs.
 - `hybrid`: use both and record which system controls each target.
 
-Automatic mode selects Git only when the target itself contains `.git`; otherwise it
-selects shared-folder. Select hybrid explicitly when documentation and implementation
-have different homes.
+Automatic mode selects Git when the target or an enclosing directory contains `.git`;
+otherwise it selects shared-folder. This is a tracker mode, not a provider choice.
+A local-only directory can use shared-folder tracking with no remote configured.
+Select hybrid explicitly when documentation and implementation have different homes.
+
+## Portability upgrades
+
+Audit existing records and the actual vault layout before upgrading the tracker.
+Version 1.2.0 stores in-project file targets as relative POSIX paths, rejects external
+or home-relative paths, and diagnoses nonportable stored targets rather than silently
+rewriting them. A generated-file upgrade is not a record migration. Existing legacy
+records may need an explicitly reviewed mapping and migration before validation can
+pass; preserve immutable history and do not remove another contributor's claims.
+There is no automatic record migration. Superseding a record alone does not clear
+legacy-path diagnostics in retained historical records.
+
+When moving a nested project to a different vault layout, the dashboard's folder
+scope must match the recipient's agreed layout. The validator reports mismatches.
+Preview and review the generated dashboard update before applying it. Do not call
+an arbitrary copied folder multi-user-ready based only on file existence.

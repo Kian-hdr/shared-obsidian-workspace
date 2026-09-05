@@ -1,6 +1,6 @@
 ---
 name: setup-shared-project-workspace
-description: Set up, retrofit, or audit a Markdown or Obsidian project for multiple people and AI agents, with canonical instructions, structured work and change records, ownership, dependencies, handoffs, and validation. After setup, provide a teammate onboarding prompt in chat for Drive access and local agent readiness. Also use when asked for that prompt for an existing workspace; do not use merely to manage an ordinary task inside an already configured workspace.
+description: Set up, retrofit, or audit a portable Markdown or Obsidian workspace for people and AI agents, with ownership, dependencies, handoffs, validation, and a recipient-specific onboarding prompt. Discover the user's actual storage method and local environment; support local-only, Git, shared-folder, and hybrid workflows without requiring a particular account or provider. Do not use merely to manage ordinary tasks in an already configured workspace.
 ---
 
 # Set up a shared project workspace
@@ -31,8 +31,12 @@ tracking model, repairing records, or explaining its fields in detail.
 
 ## Workflow
 
-1. Resolve the exact project root and inspect existing `AGENTS.md`, `CLAUDE.md`,
-   project-home notes, `.obsidian`, `.git`, and `Coordination/` state.
+1. Resolve the recipient's exact project/vault roots and inspect existing `AGENTS.md`,
+   `CLAUDE.md`, project homes, `.obsidian`, the enclosing Git root, and `Coordination/`.
+   Identify the actual storage/access method using
+   [references/storage-access.md](references/storage-access.md). Never infer an account,
+   provider, or shared location from this toolkit's author or download URL. Local-only
+   work needs no cloud account, client, URL, or upload. A plain folder is not proof of sync.
 2. Follow all instructions already governing the target. Do not weaken or replace
    project-specific scope, security, approval, or evidence rules.
 3. For a retrofit, run the audit first:
@@ -70,8 +74,11 @@ tracking model, repairing records, or explaining its fields in detail.
 For a prompt-only request, inspect the existing workspace and use that reference;
 do not rerun setup. Audits and dry runs do not require a prompt unless requested.
 If setup fails, report the failure; label any requested preview as provisional.
-If a share URL cannot be verified or supplied, complete local work and ask only for
-the missing link. Do not invent a URL or present an incomplete prompt as ready to send.
+For shared work, if essential access details are missing, complete independent local
+work and ask only for the locator required by that workflow. This may be a repository
+URL, folder invitation, or network-share instruction; it is not always a folder URL.
+No remote locator is required for local-only setup. Do not invent a provider or call
+an incomplete shared invitation ready. Report local and shared readiness separately.
 
 ## Operating invariants
 
@@ -91,6 +98,9 @@ the missing link. Do not invent a URL or present an incomplete prompt as ready t
 - Never rewrite or delete immutable records. Correct them with a superseding record.
 - Git remains authoritative for code diffs and commits. The coordination records hold
   semantic state, ownership, impact, and handoff context.
+- Keep shared file targets and project-home references project-relative. Each
+  contributor resolves their own root. Do not store an owner's home-directory path,
+  account mount path, or unrelated external file location in operational records.
 - Synchronized folders do not provide transactional locking. Do not promise continuous
   real-time awareness; require sync checkpoints at session start, before mutation,
   after material changes, before integration, and at handoff.

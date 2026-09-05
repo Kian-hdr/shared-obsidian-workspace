@@ -7,17 +7,19 @@ has completed and your terminal is in that project, not this toolkit repository.
 
 Review the tracker before its first execution and verify its provenance with the
 project owner. Choose an actor ID unique to your human/agent/session and do not use
-an email address. Replace the example identity before running:
+an email address. Use your own identity; the test suite's example people are fixtures.
+Run validation/status first, then use `sync --help` for required identity arguments:
 
 ```bash
 python3 Coordination/project_tracker.py --help
 python3 Coordination/project_tracker.py validate
-python3 Coordination/project_tracker.py sync --actor taylor-agent-laptop --human Taylor --agent Codex
 python3 Coordination/project_tracker.py status
+python3 Coordination/project_tracker.py sync --help
 ```
 
 `sync` records what this actor has reviewed locally. It does not trigger or verify
-Google Drive, Obsidian Sync, or Git synchronization. Check your provider separately.
+provider propagation or Git operations. Check your actual access method separately;
+remote synchronization is not applicable to local-only work.
 
 ## Own a bounded task
 
@@ -53,6 +55,8 @@ when diagnosing records. Use the tracker rather than hand-editing its operationa
 Divide work by exact files, directories, branches, environments, or artifacts. Two
 agents must not edit the same target concurrently. A directory claim includes its
 children. Agree on an integration owner and declare dependencies before work diverges.
+Use project-relative paths for file targets. Each person's project may have a different
+local root; a sender's absolute home or mount path is not a shared target identifier.
 
 Claims are advisory on synchronized filesystems. Two disconnected computers can both
 see an apparently free target. Do not continue affected edits offline when ownership

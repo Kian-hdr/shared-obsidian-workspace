@@ -13,10 +13,10 @@ import re
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
-WORKSPACE_TRACKER_VERSION = "1.1.0"
+WORKSPACE_TRACKER_VERSION = "1.2.0"
 SCHEMA_VERSION = 1
 GENERATOR_SIGNATURE = "generated-by: setup-shared-project-workspace"
 
@@ -178,6 +178,9 @@ def find_work(work_id: str) -> tuple[Path, dict[str, Any], str]:
         raise TrackerError(f"Unknown work ID: {normalized}")
     if len(matches) > 1:
         raise TrackerError(f"Duplicate work ID: {normalized}")
+    problems = stored_target_problems(matches[0][1])
+    if problems:
+        raise TrackerError(f"{normalized}: " + "; ".join(problems))
     return matches[0]
 
 
@@ -225,16 +228,61 @@ def ensure_actor(actor_id: str, human: str | None, agent: str | None) -> tuple[P
 
 
 def normalize_target(target: str) -> str:
+    """Convert a local file input to the same portable label on every device."""
+    if not isinstance(target, str):
+        raise TrackerError("Targets must be strings.")
     value = target.strip().replace("\\", "/")
-    while value.startswith("./"):
-        value = value[2:]
-    return posixpath.normpath(value.rstrip("/") or ".")
+    if not value or value.startswith("~"):
+        raise TrackerError("Use a project-relative target, not an empty value or a home shortcut.")
+    if ".." in value.split("/"):
+        raise TrackerError("Parent traversal is not supported in targets; use a path inside the project root.")
+    if is_resource_label(value):
+        return posixpath.normpath(value)
+    path = Path(value)
+    windows_drive = PureWindowsPath(value).drive
+    if windows_drive and (os.name != "nt" or not path.is_absolute()):
+        raise TrackerError("Foreign-machine or drive-relative targets are not portable; use a project-relative path.")
+    if value.startswith("/") and not path.is_absolute():
+        raise TrackerError("Foreign-machine absolute targets are not portable; use a project-relative path.")
+    root = PROJECT_ROOT.resolve()
+    resolved = (path if path.is_absolute() else root / path).resolve()
+    if not resolved.is_relative_to(root):
+        raise TrackerError("Target is outside the project root; use a shared project-relative path or an agreed non-file resource label.")
+    return resolved.relative_to(root).as_posix()
+
+
+def is_resource_label(target: str) -> bool:
+    # Non-file labels retain advisory ownership semantics on every operating system.
+    return bool(re.match(r"^(branch|environment|env|artifact):[^/]+", target))
+
+
+def stored_target_problems(data: dict[str, Any]) -> list[str]:
+    """Diagnose old records without silently changing their historical paths."""
+    problems = []
+    targets = list(data.get("targets", [])) + list(data.get("changed_targets", []))
+    for field in ("target_hashes", "hashes_before", "hashes_after"):
+        try:
+            targets.extend(unpack_hashes(data.get(field, [])).keys())
+        except TrackerError as exc:
+            problems.append(str(exc))
+    for target in dict.fromkeys(targets):
+        try:
+            canonical = normalize_target(target)
+            if canonical == target:
+                continue
+            reason = f"use project-relative {canonical!r}"
+        except TrackerError as exc:
+            reason = str(exc)
+        problems.append(
+            f"Nonportable stored target {target!r}: {reason}. Review the original-to-local mapping before an explicit migration. Immutable history is not rewritten by this tracker; adding a superseding record alone does not clear legacy-path diagnostics. No records were rewritten."
+        )
+    return problems
 
 
 def targets_overlap(first: str, second: str) -> bool:
     a = normalize_target(first).casefold()
     b = normalize_target(second).casefold()
-    return a == b or a.startswith(b + "/") or b.startswith(a + "/")
+    return a == "." or b == "." or a == b or a.startswith(b + "/") or b.startswith(a + "/")
 
 
 def active_works() -> list[tuple[Path, dict[str, Any], str]]:
@@ -246,6 +294,9 @@ def assert_targets_available(targets: list[str], *, excluding_work: str | None =
     for _, data, _ in active_works():
         if excluding_work and data.get("work_id") == excluding_work:
             continue
+        problems = stored_target_problems(data)
+        if problems:
+            raise TrackerError(f"{data.get('work_id')}: " + "; ".join(problems))
         for requested in targets:
             for claimed in data.get("targets", []):
                 if targets_overlap(requested, claimed):
@@ -255,11 +306,12 @@ def assert_targets_available(targets: list[str], *, excluding_work: str | None =
 
 
 def resolve_target(target: str) -> Path:
-    path = Path(target).expanduser()
-    return path if path.is_absolute() else PROJECT_ROOT / path
+    return PROJECT_ROOT / normalize_target(target)
 
 
 def sha256_target(target: str) -> str:
+    if is_resource_label(normalize_target(target)):
+        return "missing"
     path = resolve_target(target)
     if not path.exists():
         return "missing"
@@ -964,6 +1016,9 @@ def command_sync(args: argparse.Namespace) -> None:
 
 
 def drift_for_work(data: dict[str, Any]) -> list[str]:
+    problems = stored_target_problems(data)
+    if problems:
+        return problems
     recorded = unpack_hashes(data.get("target_hashes", []))
     current = hash_targets(data.get("targets", []))
     return [
@@ -1014,6 +1069,32 @@ def command_reconcile(_: argparse.Namespace) -> None:
     print("All active target hashes match their latest work records.")
 
 
+def configured_items_folder(base_text: str) -> str | None:
+    """Read the generated filter scalar, including earlier unquoted versions."""
+    for line in base_text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("- "):
+            continue
+        expression = stripped[2:].strip()
+        try:
+            if expression.startswith('"'):
+                expression = json.loads(expression)
+            elif expression.startswith("'") and expression.endswith("'"):
+                expression = expression[1:-1].replace("''", "'")
+            elif re.search(r":(?:\s|$)|(?:^|\s)#", expression):
+                # In a plain YAML scalar these introduce a mapping or comment,
+                # even when they occur inside the expression's string argument.
+                continue
+            if not isinstance(expression, str):
+                continue
+            match = re.fullmatch(r'file\.inFolder\(("(?:\\.|[^"\\])*")\)', expression)
+            if match:
+                return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
 def validate_workspace() -> list[str]:
     errors: list[str] = []
     agents = PROJECT_ROOT / "AGENTS.md"
@@ -1027,12 +1108,32 @@ def validate_workspace() -> list[str]:
         errors.append("Installed tracker differs from the trusted skill asset; review before use.")
     if not agents.exists() or "shared-project-workspace:start" not in agents.read_text(encoding="utf-8"):
         errors.append("AGENTS.md is missing the managed collaboration section.")
+    else:
+        home_match = re.search(r"(?m)^Project home: `([^`]+)`", agents.read_text(encoding="utf-8"))
+        if home_match:
+            home_label = home_match.group(1)
+            try:
+                portable_home = normalize_target(home_label) == home_label and not is_resource_label(home_label)
+            except TrackerError:
+                portable_home = False
+            if not portable_home:
+                errors.append("AGENTS.md has a nonportable project-home pointer. Select an existing project-relative home note and review setup --project-home <relative-note> --dry-run --upgrade-managed before updating the managed section.")
     if not claude.exists() or "AGENTS.md" not in claude.read_text(encoding="utf-8"):
         errors.append("CLAUDE.md is missing or does not point to AGENTS.md.")
     if not base.exists():
         errors.append("Coordination/Workspace.base is missing.")
-    elif "__ITEMS_FOLDER__" in base.read_text(encoding="utf-8"):
-        errors.append("Workspace.base still contains an unresolved folder placeholder.")
+    else:
+        base_text = base.read_text(encoding="utf-8")
+        if "__ITEMS_FOLDER__" in base_text:
+            errors.append("Workspace.base still contains an unresolved folder placeholder.")
+        else:
+            configured_folder = configured_items_folder(base_text)
+            vault_root = next((root for root in (PROJECT_ROOT, *PROJECT_ROOT.parents) if (root / ".obsidian").is_dir()), PROJECT_ROOT)
+            expected_folder = ITEMS_DIR.relative_to(vault_root).as_posix()
+            if configured_folder != expected_folder:
+                errors.append(
+                    f"Workspace.base folder does not match this vault layout: expected {expected_folder!r}, found {configured_folder!r}. Open the same shared vault root/layout as the team, or review setup --dry-run --upgrade-managed and rebase the generated dashboard for the agreed layout."
+                )
     try:
         records = all_records()
     except (TrackerError, OSError) as exc:
@@ -1066,6 +1167,8 @@ def validate_workspace() -> list[str]:
         if record_type not in required:
             errors.append(f"{path.name}: unsupported record_type {record_type!r}.")
             continue
+        target_problems = stored_target_problems(data)
+        errors.extend(f"{path.name}: {problem}" for problem in target_problems)
         missing = sorted(required[record_type] - set(data))
         if missing:
             errors.append(f"{path.name}: missing {', '.join(missing)}.")
@@ -1096,7 +1199,7 @@ def validate_workspace() -> list[str]:
             if data.get("status") in ACTIVE_STATUSES:
                 if claim_is_stale(data):
                     errors.append(f"{path.name}: stale or invalid claim expiry.")
-                for target in data.get("targets", []):
+                for target in data.get("targets", []) if not target_problems else []:
                     active_targets.append((work_id, target))
         if record_type in {"event", "decision"} and data.get("impact") not in IMPACTS:
             errors.append(f"{path.name}: unsupported impact {data.get('impact')!r}.")

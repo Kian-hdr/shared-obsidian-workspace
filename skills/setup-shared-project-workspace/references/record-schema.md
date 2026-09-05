@@ -29,6 +29,21 @@ Statuses are `not_started`, `claimed`, `in_progress`, `blocked`, `pending_approv
 Dependencies use work IDs. Baselines are serialized as `WORK-ID@revision` strings. A
 dependent work item needs review whenever its baseline is below the upstream revision.
 
+### Portable targets
+
+Version 1.2.0 stores file `targets` and hash-map keys as project-relative POSIX paths.
+An absolute input inside the current project is normalized to the same identifier
+as its relative form. Inputs outside the project, home shortcuts, and parent traversal
+are rejected. Contributors resolve their own local project roots; the shared records
+must not require an original owner's absolute machine path.
+
+Non-file labels beginning with `branch:`, `environment:`, `env:`, or `artifact:` are
+advisory names, not proof of the resource's live state. They are not resolved or
+hashed as local files; their hash field uses the `missing` sentinel.
+Existing nonportable stored paths are diagnosed before use. Updating the
+tracker does not migrate records or change historical ownership; follow the
+[retrofit policy](retrofit-policy.md) for reviewed upgrades and record mapping.
+
 ### Event
 
 Events are immutable. They capture a material state change, including before and after

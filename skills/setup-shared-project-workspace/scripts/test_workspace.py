@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
+import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,6 +17,13 @@ import yaml
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 SETUP = SKILL_ROOT / "scripts" / "setup_workspace.py"
+
+
+def load_script(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def snapshot(root: Path) -> dict[str, str]:
@@ -163,6 +173,41 @@ class WorkspaceTests(unittest.TestCase):
         self.assertTrue((root / "CLAUDE.md").read_text().startswith("# Existing Claude settings"))
         self.assertFalse((root / "README.md").exists())
 
+    def test_existing_home_note_is_reused(self) -> None:
+        root = Path(self.temporary.name) / "HomeVault"
+        root.mkdir()
+        home = root / "Home.md"
+        home.write_text("# Shared vault home\n", encoding="utf-8")
+        self.setup_project(root)
+        self.assertFalse((root / "README.md").exists())
+        self.assertEqual(home.read_text(encoding="utf-8"), "# Shared vault home\n")
+        self.assertIn("Project home: `Home.md`", (root / "AGENTS.md").read_text(encoding="utf-8"))
+
+    def test_project_home_outside_share_is_rejected_without_writes(self) -> None:
+        root = Path(self.temporary.name) / "NewShare"
+        root.mkdir()
+        outside = Path(self.temporary.name) / "Personal home.md"
+        outside.write_text("# Personal home\n", encoding="utf-8")
+        before = snapshot(Path(self.temporary.name))
+        result = self.setup_project(root, ["--project-home", str(outside)], expected=1)
+        self.assertIn("Project home must be inside the project root", result.stderr)
+        self.assertEqual(before, snapshot(Path(self.temporary.name)))
+
+    def test_project_home_uses_portable_separators(self) -> None:
+        root = Path(self.temporary.name) / "OtherShare"
+        (root / "Notes").mkdir(parents=True)
+        (root / "Notes" / "Project home.md").write_text("# Home\n", encoding="utf-8")
+        self.setup_project(root, ["--project-home", "Notes\\Project home.md"])
+        self.assertIn("Project home: `Notes/Project home.md`", (root / "AGENTS.md").read_text(encoding="utf-8"))
+
+    def test_legacy_absolute_home_pointer_is_diagnosed_without_writes(self) -> None:
+        path = self.root / "AGENTS.md"
+        path.write_text(path.read_text(encoding="utf-8").replace("Project home: `README.md`", f"Project home: `{self.root / 'README.md'}`"), encoding="utf-8")
+        before = snapshot(self.root)
+        result = self.tracker("validate", expected=1)
+        self.assertIn("nonportable project-home pointer", result.stdout)
+        self.assertEqual(before, snapshot(self.root))
+
     def test_dry_run_has_no_writes(self) -> None:
         before = snapshot(self.root)
         self.setup_project(self.root, ["--dry-run"])
@@ -219,6 +264,94 @@ class WorkspaceTests(unittest.TestCase):
             "--next-action", "Test", expected=1,
         )
         self.assertIn("Target conflict", result.stderr)
+
+    def test_absolute_local_targets_survive_relocation(self) -> None:
+        document = self.root / "Shared notes ü.md"
+        document.write_text("Shared contents\n", encoding="utf-8")
+        self.claim(target=str(document))
+        data, _ = read_note(self.work_path())
+        self.assertEqual(data["targets"], ["Shared notes ü.md"])
+        self.assertEqual(json.loads(data["target_hashes"][0])["path"], "Shared notes ü.md")
+        for path in (self.root / "Coordination" / "Items").glob("*.md"):
+            self.assertNotIn(str(self.root), path.read_text(encoding="utf-8"))
+
+        recipient = Path(self.temporary.name) / "Different recipient folder" / "Project"
+        shutil.copytree(self.root, recipient)
+        document.write_text("Only the original machine changed\n", encoding="utf-8")
+        self.run_command([sys.executable, str(recipient / "Coordination" / "project_tracker.py"),
+                          "check", "--actor", "taylor-codex", "--work-id", "ARCH-001"])
+        self.run_command([sys.executable, str(recipient / "Coordination" / "project_tracker.py"), "validate"])
+
+    def test_absolute_and_relative_claims_conflict(self) -> None:
+        self.claim(target="shared.md")
+        before = snapshot(self.root)
+        result = self.tracker(
+            "claim", "--work-id", "OTHER", "--title", "Other", "--actor", "jordan-codex",
+            "--owner", "Jordan", "--agent", "Codex", "--initiated-by", "Jordan",
+            "--target", str(self.root / "shared.md"), "--objective", "Test",
+            "--acceptance", "Done", "--next-action", "Test", expected=1,
+        )
+        self.assertIn("Target conflict", result.stderr)
+        self.assertEqual(before, snapshot(self.root))
+
+    def test_unportable_new_targets_are_rejected_without_writes(self) -> None:
+        targets = ["~/private.md", "../private.md", "src/../shared.md", "C:\\OtherUser\\private.md",
+                   "\\\\other-server\\share\\private.md", str(self.root.parent / "private.md")]
+        for target in targets:
+            with self.subTest(target=target):
+                before = snapshot(self.root)
+                self.tracker(
+                    "claim", "--work-id", "BAD", "--title", "Bad target", "--actor", "new-actor",
+                    "--owner", "Jordan", "--agent", "Codex", "--initiated-by", "Jordan",
+                    "--target", target, "--objective", "Test", "--acceptance", "Done",
+                    "--next-action", "Test", expected=1,
+                )
+                self.assertEqual(before, snapshot(self.root))
+
+    def test_project_root_claim_conflicts_with_descendants(self) -> None:
+        self.claim(target=".")
+        result = self.tracker(
+            "claim", "--work-id", "OTHER", "--title", "Other", "--actor", "jordan-codex",
+            "--owner", "Jordan", "--agent", "Codex", "--initiated-by", "Jordan",
+            "--target", "notes/shared.md", "--objective", "Test", "--acceptance", "Done",
+            "--next-action", "Test", expected=1,
+        )
+        self.assertIn("Target conflict", result.stderr)
+
+    def test_existing_nonportable_work_is_diagnosed_without_rewriting(self) -> None:
+        self.claim(target="shared.md")
+        path = self.work_path()
+        data, body = read_note(path)
+        old_target = str(self.root / "shared.md")
+        data["targets"] = [old_target]
+        data["target_hashes"] = [json.dumps({"path": old_target, "sha256": "missing"})]
+        write_note(path, data, body)
+        before = snapshot(self.root)
+        result = self.tracker("validate", expected=1)
+        self.assertIn("Nonportable stored target", result.stdout)
+        self.assertIn("explicit migration", result.stdout)
+        self.tracker("check", "--actor", "taylor-codex", "--work-id", "ARCH-001", expected=1)
+        self.assertEqual(before, snapshot(self.root))
+
+    def test_historical_nonportable_target_is_diagnosed_without_rewriting(self) -> None:
+        self.claim(target="shared.md")
+        event = next((self.root / "Coordination" / "Items").glob("EVENT-*.md"))
+        data, body = read_note(event)
+        data["hashes_before"] = [json.dumps({"path": "C:/FormerUser/shared.md", "sha256": "missing"})]
+        write_note(event, data, body)
+        before = snapshot(self.root)
+        result = self.tracker("validate", expected=1)
+        self.assertIn(event.name, result.stdout)
+        self.assertIn("Nonportable stored target", result.stdout)
+        self.assertEqual(before, snapshot(self.root))
+
+    def test_logical_resource_labels_remain_advisory(self) -> None:
+        labels = ["branch:feature/docs", "environment:staging", "env:preview", "artifact:report/final"]
+        self.claim(target=labels[0], extra=[argument for label in labels[1:] for argument in ("--target", label)])
+        data, _ = read_note(self.work_path())
+        self.assertEqual(data["targets"], labels)
+        self.assertTrue(all(json.loads(item)["sha256"] == "missing" for item in data["target_hashes"]))
+        self.tracker("validate")
 
     def test_dependency_change_requires_acknowledgement(self) -> None:
         self.claim()
@@ -335,6 +468,51 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIn('file.inFolder("Projects/Nested/Coordination/Items")', base["filters"]["and"])
         self.assertEqual(read_note(target / "README.md")[0]["type"], "project")
 
+    def test_dashboard_special_characters_roundtrip_through_yaml(self) -> None:
+        setup_module = load_script("workspace_setup_fixture", SETUP)
+        tracker_module = load_script("workspace_tracker_fixture", SKILL_ROOT / "assets" / "project_tracker.py")
+        # Test even characters disallowed in actual Windows filenames without
+        # making the cross-platform suite create an invalid local directory.
+        folder = 'Projects/Team\'s café: "notes"/Coordination/Items'
+        content = setup_module.dashboard_content(folder)
+        filters = yaml.safe_load(content)["filters"]["and"]
+        expected = f"file.inFolder({json.dumps(folder, ensure_ascii=False)})"
+        self.assertIn(expected, filters)
+        self.assertTrue(all(isinstance(expression, str) for expression in filters))
+        self.assertEqual(tracker_module.configured_items_folder(content), folder)
+        self.assertEqual(tracker_module.configured_items_folder('    - file.inFolder("Coordination/Items")\n'), "Coordination/Items")
+        self.assertEqual(tracker_module.configured_items_folder("    - '" + expected.replace("'", "''") + "'\n"), folder)
+        self.assertIsNone(tracker_module.configured_items_folder("    - " + expected + "\n"))
+
+        vault = Path(self.temporary.name) / "QuotedVault"
+        (vault / ".obsidian").mkdir(parents=True)
+        target = vault / "Projects" / "Team's café ‘notes’"
+        target.mkdir(parents=True)
+        self.setup_project(target)
+        installed = (target / "Coordination" / "Workspace.base").read_text(encoding="utf-8")
+        installed_filters = yaml.safe_load(installed)["filters"]["and"]
+        self.assertIn('file.inFolder("Projects/Team\'s café ‘notes’/Coordination/Items")', installed_filters)
+        self.run_command([sys.executable, str(target / "Coordination" / "project_tracker.py"), "validate"])
+
+    def test_dashboard_layout_change_is_detected_and_reviewed_rebase_works(self) -> None:
+        vault = Path(self.temporary.name) / "OriginalVault"
+        (vault / ".obsidian").mkdir(parents=True)
+        target = vault / "Projects" / "Nested"
+        target.mkdir(parents=True)
+        self.setup_project(target)
+        recipient = Path(self.temporary.name) / "CopiedProjectVault"
+        shutil.copytree(target, recipient)
+        (recipient / ".obsidian").mkdir()
+        before = snapshot(recipient)
+        result = self.run_command([sys.executable, str(recipient / "Coordination" / "project_tracker.py"), "validate"], expected=1)
+        self.assertIn("does not match this vault layout", result.stdout)
+        self.assertIn("--dry-run --upgrade-managed", result.stdout)
+        self.assertEqual(before, snapshot(recipient))
+        self.setup_project(recipient, ["--dry-run", "--upgrade-managed"])
+        self.assertEqual(before, snapshot(recipient))
+        self.setup_project(recipient, ["--upgrade-managed"])
+        self.run_command([sys.executable, str(recipient / "Coordination" / "project_tracker.py"), "validate"])
+
     def test_git_and_hybrid_modes(self) -> None:
         root = Path(self.temporary.name) / "GitProject"
         (root / ".git").mkdir(parents=True)
@@ -342,6 +520,14 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIn("Collaboration mode: `git`", (root / "AGENTS.md").read_text())
         self.setup_project(root, ["--collaboration-mode", "hybrid", "--upgrade-managed"])
         self.assertIn("Collaboration mode: `hybrid`", (root / "AGENTS.md").read_text())
+
+    def test_nested_project_inherits_enclosing_git_mode(self) -> None:
+        repository = Path(self.temporary.name) / "Repository"
+        (repository / ".git").mkdir(parents=True)
+        root = repository / "Projects" / "Nested"
+        root.mkdir(parents=True)
+        self.setup_project(root)
+        self.assertIn("Collaboration mode: `git`", (root / "AGENTS.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -7,17 +7,20 @@ The instructions cover navigation, ownership, evidence, synchronization checkpoi
 and handoffs. The optional Python tracker adds work records, target claims, dependency
 tracking, and an Obsidian Bases dashboard.
 
-**This is a coordination toolkit, not a sync service or an Obsidian plugin.** Use your
-existing sharing provider. File claims are advisory; they cannot prevent simultaneous
-offline edits on different computers.
+Use your own folder, repository, storage provider, and account. Local-only work needs
+no online account. The public GitHub address below is the software source; it does
+not connect you to the maintainer's vault or Google Drive.
+
+This is a coordination toolkit, not a sync service or an Obsidian plugin. File claims
+are advisory; they cannot prevent simultaneous offline edits on different computers.
 
 ## Let your agent set it up
 
 **[Copy the setup prompt into your own chat](SETUP-PROMPT.md).** No placeholders
 need editing. The prompt guides a local agent through finding your vault, installing
 the toolkit, preserving existing instructions, setting up or joining the correct
-project, and checking the result. It installs and configures missing Obsidian, Python,
-and the existing sharing client's dependencies. If you choose Homebrew, it installs
+project, and checking the result. It directs the agent to install missing Obsidian,
+Python, and only the dependencies of your selected access method. If you choose Homebrew, it installs
 and configures Homebrew too. It continues under your setup authorization, respecting
 your agent's approval settings and any required authentication or OS interaction.
 
@@ -46,8 +49,8 @@ cd shared-obsidian-workspace
 
 Copy [AGENTS.md](AGENTS.md) into your vault root. If that file already exists, merge
 the relevant sections rather than replacing your existing rules. Keep any stricter
-privacy, approval, and project-specific requirements. Remove the sentence about this
-template repository when adapting it to your own vault.
+privacy, approval, and project-specific requirements. The instructions discover the
+recipient's environment rather than assuming the source author's account or paths.
 
 Tell your agent to read the file explicitly. Automatic discovery differs by agent.
 The file alone does not install the tracker or configure sharing.
@@ -67,24 +70,8 @@ Keep a backup and review differences if a skill with that name is already instal
 Start a new agent session if needed, and confirm the skill is discoverable. Other
 agents can read its `SKILL.md` directly and use the scripts without automatic discovery.
 
-Give your local agent this prompt, replacing the project path:
-
-```text
-Use the setup-shared-project-workspace skill to configure my computer and the existing
-project at <absolute project path> for collaboration by multiple people and AI agents.
-I authorize required local installs and configuration, including missing Obsidian,
-Python, the existing sharing client, prerequisites, and minimal PATH changes. If I
-choose Homebrew, install and configure it when missing. Follow references/local-setup.md.
-Continue without repeated permission requests for authorized steps; honor my actual
-approval settings and hand off only required authentication or OS interactions.
-Read its governing instructions and current coordination state first. Audit it,
-preview the retrofit, preserve existing files and rules, and apply compatible local
-setup changes. Reuse the existing sharing provider. Ask for identity information
-only if it cannot be determined. Validate the result and give me the skill's
-teammate onboarding prompt. If the approved shared-folder URL is missing, finish
-local setup and ask me for that URL before calling the onboarding prompt ready.
-Do not change sharing permissions, send invitations, or resume existing project work.
-```
+Then use the same [setup prompt](SETUP-PROMPT.md). It is the single starting prompt
+for both downloaded toolkits and installed skills, and discovers your actual project.
 
 ### Direct setup
 
@@ -100,7 +87,7 @@ require PyYAML, which is a development dependency only.
 ## How teammates work together
 
 1. The owner configures the actual shared project once.
-2. Teammates obtain authorized access through the existing sharing provider.
+2. Teammates obtain authorized access through that project's actual access method.
 3. Each agent reads `AGENTS.md`, reviews current records, and uses a unique actor ID.
 4. Contributors claim separate targets and check ownership before each mutation.
 5. Material changes include evidence, dependency impact, and a next action.
@@ -112,6 +99,26 @@ Python runtime. Downloading this public repository does not grant access to anyo
 private vault, and downloading a copy of a vault does not create a synchronized workspace.
 
 See [the collaboration guide](docs/COLLABORATION.md) for everyday use and conflict handling.
+
+## Choose your own access method
+
+| Your workflow | What setup needs |
+| --- | --- |
+| Local-only | Your chosen folder; no cloud account, client, link, or upload |
+| Git | Your project's remote and checkout, using your own access |
+| Shared folder | Your actual service/network share and its approved locator |
+| Hybrid | A clear mapping of notes, code, and other targets to their authorities |
+
+Google Drive is one optional provider, not a requirement. The
+[access guide](skills/setup-shared-project-workspace/references/storage-access.md)
+keeps provider-specific instructions separate from the generic setup. The toolkit
+does not supply storage, subscriptions, accounts, or access to someone else's files.
+
+Shared file targets and project-home references use project-relative paths so each
+person can keep the project under a different local root. Keep the agreed vault
+layout, or review and regenerate dashboard scope after moving a nested project.
+See [updating an existing workspace](docs/SETUP.md#updating-an-existing-workspace)
+before upgrading an older tracker or transferred copy.
 
 ## Repository contents
 
